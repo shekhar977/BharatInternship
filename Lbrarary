@@ -1,0 +1,152 @@
+#include <iostream>
+#include <string>
+#include <vector>
+#include <ctime>
+
+struct Book {
+    std::string title;
+    std::string author;
+    std::string ISBN;
+    bool isAvailable;
+};
+
+struct Transaction {
+    int bookIndex;
+    int borrowerID;
+    time_t checkoutDate;
+};
+
+std::vector<Book> libraryBooks;
+std::vector<Transaction> transactions;
+int borrowerIDCounter = 1;
+
+void addBook(const std::string &title, const std::string &author, const std::string &ISBN) {
+    Book book;
+    book.title = title;
+    book.author = author;
+    book.ISBN = ISBN;
+    book.isAvailable = true;
+    libraryBooks.push_back(book);
+}
+
+void displayBooks() {
+    std::cout << "Library Catalog:\n";
+    for (size_t i = 0; i < libraryBooks.size(); ++i) {
+        std::cout << i + 1 << ". " << libraryBooks[i].title << " by " << libraryBooks[i].author;
+        if (libraryBooks[i].isAvailable) {
+            std::cout << " (Available)" << std::endl;
+        } else {
+            std::cout << " (Checked out)" << std::endl;
+        }
+    }
+}
+
+int findBook(const std::string &searchTerm) {
+    for (size_t i = 0; i < libraryBooks.size(); ++i) {
+        if (libraryBooks[i].title == searchTerm || libraryBooks[i].author == searchTerm || libraryBooks[i].ISBN == searchTerm) {
+            return static_cast<int>(i);
+        }
+    }
+    return -1;
+}
+
+void checkoutBook(int bookIndex) {
+    if (bookIndex >= 0 && bookIndex < static_cast<int>(libraryBooks.size()) && libraryBooks[bookIndex].isAvailable) {
+        libraryBooks[bookIndex].isAvailable = false;
+        Transaction transaction;
+        transaction.bookIndex = bookIndex;
+        transaction.borrowerID = borrowerIDCounter++;
+        transaction.checkoutDate = time(nullptr);
+        transactions.push_back(transaction);
+        std::cout << "Book checked out successfully. Borrower ID: " << transaction.borrowerID << std::endl;
+    } else {
+        std::cout << "Book is not available for checkout." << std::endl;
+    }
+}
+
+void returnBook(int borrowerID) {
+    for (Transaction &transaction : transactions) {
+        if (transaction.borrowerID == borrowerID) {
+            libraryBooks[transaction.bookIndex].isAvailable = true;
+            time_t now = time(nullptr);
+            double daysOverdue = difftime(now, transaction.checkoutDate) / (60 * 60 * 24);
+            if (daysOverdue > 0) {
+                double fine = daysOverdue * 0.25;
+                std::cout << "Book returned successfully. Fine: $" << fine << std::endl;
+            } else {
+                std::cout << "Book returned successfully." << std::endl;
+            }
+            return;
+        }
+    }
+    std::cout << "Borrower ID not found or no transaction associated with it." << std::endl;
+}
+
+int main() {
+    while (true) {
+        std::cout << "\nLibrary Management System\n";
+        std::cout << "1. Add Book\n";
+        std::cout << "2. Search Book\n";
+        std::cout << "3. Checkout Book\n";
+        std::cout << "4. Return Book\n";
+        std::cout << "5. Display Books\n";
+        std::cout << "6. Exit\n";
+        std::cout << "Enter your choice: ";
+
+        int choice;
+        std::cin >> choice;
+
+        switch (choice) {
+            case 1: {
+                std::string title, author, ISBN;
+                std::cout << "Enter book title: ";
+                std::cin.ignore();
+                std::getline(std::cin, title);
+                std::cout << "Enter author: ";
+                std::getline(std::cin, author);
+                std::cout << "Enter ISBN: ";
+                std::getline(std::cin, ISBN);
+                addBook(title, author, ISBN);
+                break;
+            }
+            case 2: {
+                std::string searchTerm;
+                std::cout << "Enter book title, author, or ISBN to search: ";
+                std::cin.ignore();
+                std::getline(std::cin, searchTerm);
+                int bookIndex = findBook(searchTerm);
+                if (bookIndex != -1) {
+                    std::cout << "Book found: " << libraryBooks[bookIndex].title << " by " << libraryBooks[bookIndex].author << std::endl;
+                } else {
+                    std::cout << "Book not found." << std::endl;
+                }
+                break;
+            }
+            case 3: {
+                displayBooks();
+                int bookIndex;
+                std::cout << "Enter the number of the book to checkout: ";
+                std::cin >> bookIndex;
+                checkoutBook(bookIndex - 1);
+                break;
+            }
+            case 4: {
+                int borrowerID;
+                std::cout << "Enter your borrower ID: ";
+                std::cin >> borrowerID;
+                returnBook(borrowerID);
+                break;
+            }
+            case 5:
+                displayBooks();
+                break;
+            case 6:
+                std::cout << "Exiting the program." << std::endl;
+                return 0;
+            default:
+                std::cout << "Invalid choice. Please enter a valid option." << std::endl;
+        }
+    }
+
+    return 0;
+}
